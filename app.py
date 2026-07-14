@@ -1,38 +1,45 @@
-import streamlit as st
+aimport streamlit as st
 import pandas as pd
-from google import genai
-import matplotlib.pyplot as plt
+import os
+from groq import Groq
 
-# Streamlit secrets se API Key hasil karna (Yeh GitHub par safe rahega)
-try:
-    api_key = st.secrets["API_KEY"]
-    client = genai.Client(api_key=api_key)
-except Exception as e:
+# 1. Streamlit Secrets سے API Key حاصل کرنا
+if "GROQ_API_KEY" in st.secrets:
+    api_key = st.secrets["GROQ_API_KEY"]
+else:
     st.error("API Key nahi mili. Bara-e-meharbani Streamlit Settings mein 'Secrets' set karein.")
+    st.stop()
 
+# Groq Client کو initialize کرنا
+client = Groq(api_key=api_key)
+
+# 2. UI سیٹ اپ
+st.set_page_config(page_title="AI Data Analyst")
 st.title("AI Data Analyst Dashboard")
 
+# 3. CSV فائل اپ لوڈ کرنا
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
 if uploaded_file is not None:
-    # CSV file ko load karna
-    df = pd.read_csv(uploaded_file, encoding='utf-8')
-    
-    st.write("### Data Preview:")
-    st.write(df.head())
-    
-    # Simple Analysis: Total Sales
-    st.write("### Analysis Results:")
-    if 'Sales' in df.columns:
-        total_sales = df['Sales'].sum()
-        st.metric(label="Total Sales", value=f"{total_sales:,}")
-        
-        # Chart dikhane ke liye (Category wise)
-        if 'Category' in df.columns:
-            st.write("### Sales by Category:")
-            sales_by_cat = df.groupby('Category')['Sales'].sum()
-            st.bar_chart(sales_by_cat)
-    else:
-        st.warning("CSV file mein 'Sales' ya 'Category' ka column nahi mila.")
+    # ڈیٹا لوڈ کرنا
+    df = pd.read_csv(uploaded_file)
+    st.write("Data Preview:")
+    st.dataframe(df.head())
 
-    st.write("Data Analysis mukammal ho gaya!")
+    # 4. AI سے سوال پوچھنا
+    user_question = st.text_input("Apne data ke bare mein kuch poochein:")
+    
+    if st.button("Analyze"):
+        if user_question:
+            # ڈیٹا کا خلاصہ (Summary) بنانا تاکہ AI اسے سمجھ سکے
+            data_info = df.to_string()
+            prompt = f"Data: {data_info}\n\nQuestion: {user_question}"
+            
+            # AI سے جواب لینا
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama3-8b-8192",
+            )
+            
+            st.write("Analysis Result:")
+            st.write(chat_completion.choices[0].message.content)
