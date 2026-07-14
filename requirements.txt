@@ -1,4 +1,6 @@
 streamlit
 pandas
-google-genai
-matplotlib
+plotly
+groq
+python-dotenv
+pillow
