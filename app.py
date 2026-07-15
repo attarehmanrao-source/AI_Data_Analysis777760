@@ -2,62 +2,66 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from groq import Groq
 import os
 
-# --- CSS سٹائلنگ ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #0e1117; color: #ffffff; }
-    h1, h2, h3 { color: #ffffff !important; }
-    .footer { text-align: center; font-size: 18px; color: #ffffff; padding: 20px; border-top: 1px solid #333; margin-top: 50px; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# API Key کو محفوظ طریقے سے لوڈ کریں (کوڈ میں Key نہ لکھیں!)
-api_key = os.environ.get("GROQ_API_KEY")
-
+# Page Config
 st.set_page_config(layout="wide")
+st.title("🎓 Saylani Mass IT Training - AI Data Analysis")
 
-# --- ہیڈر ---
-st.markdown("<h1 style='text-align: center;'>🎓 Saylani Mass IT Training Program 👨‍🎓👩‍🎓</h1>", unsafe_allow_html=True)
-st.markdown("<h3 style='text-align: center; color: #007BFF;'>AI Data Analysis & Insights</h3>", unsafe_allow_html=True)
+# Sidebar
+if os.path.exists("my_photo.jpg"):
+    st.sidebar.image("my_photo.jpg", caption="Atta Ur Rehman Khan", use_column_width=True)
 
-# --- فائل اپلوڈر ---
-st.subheader("📂 فائل اپلوڈ کریں")
-uploaded_file = st.file_uploader("اپنی CSV فائل یہاں ڈریگ اینڈ ڈراپ کریں", type=["csv"])
+uploaded_file = st.file_uploader("CSV فائل اپلوڈ کریں", type=["csv"])
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    st.dataframe(df)
-
-    # --- گراف سیکشن ---
-    st.subheader("📊 ویژولائزیشن")
-    x_axis = st.selectbox("X-axis", df.columns)
-    y_axis = st.selectbox("Y-axis", df.columns)
+if uploaded_file:
+    raw_df = pd.read_csv(uploaded_file)
     
-    if st.button("Generate Graph"):
+    # ڈیٹا کلیننگ بٹن
+    st.subheader("🧹 ڈیٹا ویو")
+    col1, col2 = st.columns(2)
+    show_raw = col1.button("Raw Data دیکھیں")
+    show_clean = col2.button("Clean Data (Drop NA) دیکھیں")
+
+    display_df = raw_df
+    if show_clean:
+        display_df = raw_df.dropna()
+        st.write("### کلین ڈیٹا (خالی خانے ہٹا دیے گئے)")
+    elif show_raw:
+        st.write("### اوریجنل ڈیٹا")
+    
+    st.dataframe(display_df)
+
+    # پلاٹ سیکشن
+    st.subheader("📊 ایڈوانسڈ ویژولائزیشن")
+    plot_type = st.selectbox("پلاٹ کا انتخاب کریں", ["Scatter", "Line", "Bar", "Box", "Violin", "KDE", "Relplot"])
+    x_axis = st.selectbox("X-axis", display_df.columns)
+    y_axis = st.selectbox("Y-axis", display_df.columns)
+
+    if st.button("Generate Plot"):
         plt.figure(figsize=(10, 5))
-        sns.barplot(data=df, x=x_axis, y=y_axis)
-        st.pyplot(plt)
+        try:
+            if plot_type == "Scatter": sns.scatterplot(data=display_df, x=x_axis, y=y_axis)
+            elif plot_type == "Line": sns.lineplot(data=display_df, x=x_axis, y=y_axis)
+            elif plot_type == "Bar": sns.barplot(data=display_df, x=x_axis, y=y_axis)
+            elif plot_type == "Box": sns.boxplot(data=display_df, x=x_axis, y=y_axis)
+            elif plot_type == "Violin": sns.violinplot(data=display_df, x=x_axis, y=y_axis)
+            elif plot_type == "Relplot": sns.relplot(data=display_df, x=x_axis, y=y_axis)
+            elif plot_type == "KDE":
+                if pd.api.types.is_numeric_dtype(display_df[x_axis]):
+                    sns.kdeplot(data=display_df, x=x_axis)
+                else:
+                    st.error("⚠️ KDE پلاٹ صرف نمرک (Numeric) ڈیٹا پر کام کرتا ہے۔")
+            st.pyplot(plt)
+        except Exception as e:
+            st.error(f"ایرر: {e}")
 
-    # --- AI چیٹ سیکشن (صرف تب چلے گا جب Key موجود ہو) ---
-    st.subheader("💬 AI ڈیٹا انالیسز")
-    question = st.text_input("اپنا سوال پوچھیں:")
-    if question and api_key:
-        client = Groq(api_key=api_key)
-        prompt = f"Data columns: {list(df.columns)}. Question: {question}"
-        response = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="llama-3.1-8b-instant")
-        st.write(response.choices[0].message.content)
-    elif question and not api_key:
-        st.warning("API Key سیٹ نہیں ہے۔")
-
-else:
-    st.info("براہ کرم CSV فائل اپلوڈ کریں۔")
-
-# --- شکریہ کا پیغام (Roman Urdu) ---
+# بہتر کیا گیا فوٹر
+st.markdown("---")
 st.markdown("""
-    <div class="footer">
-        ✨ <b>Khaas Shukriya:</b> Main apne idaray <b>SMIT</b> aur apne mohtaram ustad <b>Sir Azeem</b> ka tehy dil se mashkoor hoon. Aap ki taleem hi meri kamyabi ki bunyad hai. 🎓
+    <div style="text-align: center; font-size: 18px; padding: 20px; line-height: 1.6;">
+        🏢 <b>Saylani Mass IT Training (SMIT)</b> <br>
+        👨‍🏫 <b>Sir Azeem</b> <br><br>
+        <i>"میں آج جو کچھ بھی ہوں، وہ اپنے ادارے اور اپنے استاد کی محنت اور رہنمائی کی بدولت ہوں۔ ہمیں جدید ٹیکنالوجی سکھانے اور اس قابل بنانے کا تہہ دل سے شکریہ۔"</i> 🚀💻
     </div>
     """, unsafe_allow_html=True)
