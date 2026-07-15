@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
+from groq import Groq
 
 # Page Config
 st.set_page_config(layout="wide")
@@ -17,7 +18,7 @@ uploaded_file = st.file_uploader("CSV فائل اپلوڈ کریں", type=["csv"
 if uploaded_file:
     raw_df = pd.read_csv(uploaded_file)
     
-    # ڈیٹا کلیننگ بٹن
+    # 1. ڈیٹا کلیننگ بٹن
     st.subheader("🧹 ڈیٹا ویو")
     col1, col2 = st.columns(2)
     show_raw = col1.button("Raw Data دیکھیں")
@@ -32,8 +33,8 @@ if uploaded_file:
     
     st.dataframe(display_df)
 
-    # پلاٹ سیکشن
-    st.subheader("📊 ایڈوانسڈ ویژولائزیشن")
+    # 2. ایڈوانسڈ ویژولائزیشن
+    st.subheader("📊 ایڈوانسڈ ویژولیشن")
     plot_type = st.selectbox("پلاٹ کا انتخاب کریں", ["Scatter", "Line", "Bar", "Box", "Violin", "KDE", "Relplot"])
     x_axis = st.selectbox("X-axis", display_df.columns)
     y_axis = st.selectbox("Y-axis", display_df.columns)
@@ -56,7 +57,23 @@ if uploaded_file:
         except Exception as e:
             st.error(f"ایرر: {e}")
 
-# بہتر کیا گیا فوٹر
+    # 3. AI چیٹ سیکشن (یہ پہلے غائب تھا)
+    st.subheader("💬 AI ڈیٹا انالیسز")
+    user_question = st.text_input("اپنے ڈیٹا کے بارے میں کوئی بھی سوال پوچھیں:")
+    if st.button("Analyze with AI"):
+        api_key = os.environ.get("GROQ_API_KEY")
+        if api_key:
+            client = Groq(api_key=api_key)
+            prompt = f"Data columns: {list(display_df.columns)}. User question: {user_question}"
+            response = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}], 
+                model="llama-3.1-8b-instant"
+            )
+            st.write(response.choices[0].message.content)
+        else:
+            st.error("API Key نہیں مل رہی! براہ کرم Streamlit Settings میں Secrets چیک کریں۔")
+
+# Footer
 st.markdown("---")
 st.markdown("""
     <div style="text-align: center; font-size: 18px; padding: 20px; line-height: 1.6;">
