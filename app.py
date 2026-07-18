@@ -6,13 +6,26 @@ import os
 from groq import Groq
 
 # Page Config
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="AI Data Analysis Dashboard")
 st.title("🎓 Saylani Mass IT Training - AI Data Analysis")
 
-# Sidebar
-if os.path.exists("my_photo.jpg"):
-    st.sidebar.image("my_photo.jpg", caption="Atta Ur Rehman Khan", use_column_width=True)
+# Sidebar - تصاویر اور آڈیو
+with st.sidebar:
+    # 1. لوگو
+    if os.path.exists("assets/logo.jpg"):
+        st.image("assets/logo.jpg", width=200)
+    
+    # 2. کارڈ تصویر
+    if os.path.exists("my_photo.jpg"):
+        st.image("my_photo.jpg", caption="Atta Ur Rehman Khan", use_container_width=True)
+    
+    # 3. آڈیو
+    audio_path = 'assets/Pakistan_Ka_Saylani___National_Song_Pakistan_2022___Hafiz_Tahir_Qadri___14th_August_Milli_Naghma(128k).mp3'
+    if os.path.exists(audio_path):
+        st.markdown("### 🎵 Saylani Tarana")
+        st.audio(audio_path, format='audio/mp3')
 
+# مین فائل اپلوڈر
 uploaded_file = st.file_uploader("CSV فائل اپلوڈ کریں", type=["csv"])
 
 if uploaded_file:
@@ -33,7 +46,7 @@ if uploaded_file:
     
     st.dataframe(display_df)
 
-    # 2. ایڈوانسڈ ویژولائزیشن
+    # 2. ویژولائزیشن
     st.subheader("📊 ایڈوانسڈ ویژولیشن")
     plot_type = st.selectbox("پلاٹ کا انتخاب کریں", ["Scatter", "Line", "Bar", "Box", "Violin", "KDE", "Relplot"])
     x_axis = st.selectbox("X-axis", display_df.columns)
@@ -51,13 +64,11 @@ if uploaded_file:
             elif plot_type == "KDE":
                 if pd.api.types.is_numeric_dtype(display_df[x_axis]):
                     sns.kdeplot(data=display_df, x=x_axis)
-                else:
-                    st.error("⚠️ KDE پلاٹ صرف نمرک (Numeric) ڈیٹا پر کام کرتا ہے۔")
             st.pyplot(plt)
         except Exception as e:
             st.error(f"ایرر: {e}")
 
-    # 3. AI چیٹ سیکشن (یہ پہلے غائب تھا)
+  # 3. AI چیٹ سیکشن
     st.subheader("💬 AI ڈیٹا انالیسز")
     user_question = st.text_input("اپنے ڈیٹا کے بارے میں کوئی بھی سوال پوچھیں:")
     if st.button("Analyze with AI"):
@@ -72,8 +83,7 @@ if uploaded_file:
             st.write(response.choices[0].message.content)
         else:
             st.error("API Key نہیں مل رہی! براہ کرم Streamlit Settings میں Secrets چیک کریں۔")
-
-# Footer
+# 4. Footer
 st.markdown("---")
 st.markdown("""
     <div style="text-align: center; font-size: 18px; padding: 20px; line-height: 1.6;">
