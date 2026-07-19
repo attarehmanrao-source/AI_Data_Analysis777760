@@ -3,22 +3,36 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
+import io
 from groq import Groq
 
 # Page Config
 st.set_page_config(layout="wide", page_title="AI Data Analysis Dashboard")
-st.title("🎓 Saylani Mass IT Training - AI Data Analysis")
+st.markdown("""
+    <style>
+        .highlight {
+            background-color: yellow;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+    </style>
+    <h1 style="text-align: center;">
+        🎓 <span class="highlight">Saylani Mass IT Training</span> - 💻 AI ڈیٹا اینالائز 🤖
+    </h1>
+    """, unsafe_allow_html=True)
 
 # Sidebar - تصاویر اور آڈیو
 with st.sidebar:
     # 1. لوگو
     if os.path.exists("assets/logo.jpg"):
         st.image("assets/logo.jpg", width=200)
-    
+
     # 2. کارڈ تصویر
     if os.path.exists("my_photo.jpg"):
         st.image("my_photo.jpg", caption="Atta Ur Rehman Khan", use_container_width=True)
-    
+
     # 3. آڈیو
     audio_path = 'assets/Pakistan_Ka_Saylani___National_Song_Pakistan_2022___Hafiz_Tahir_Qadri___14th_August_Milli_Naghma(128k).mp3'
     if os.path.exists(audio_path):
@@ -29,8 +43,13 @@ with st.sidebar:
 uploaded_file = st.file_uploader("CSV فائل اپلوڈ کریں", type=["csv"])
 
 if uploaded_file:
-    raw_df = pd.read_csv(uploaded_file)
+    # صرف پہلی بار فائل اپلوڈ ہونے پر بلون دکھانے کے لیے
+    if 'balloons_shown' not in st.session_state:
+        st.balloons()
+        st.session_state.balloons_shown = True
     
+    raw_df = pd.read_csv(uploaded_file)
+
     # 1. ڈیٹا کلیننگ بٹن
     st.subheader("🧹 ڈیٹا ویو")
     col1, col2 = st.columns(2)
@@ -43,8 +62,31 @@ if uploaded_file:
         st.write("### کلین ڈیٹا (خالی خانے ہٹا دیے گئے)")
     elif show_raw:
         st.write("### اوریجنل ڈیٹا")
-    
+
     st.dataframe(display_df)
+
+    # 3. ڈیٹا سمری (Summary) - الگ الگ بٹن
+    st.subheader("📊 ڈیٹا سمری کنٹرول")
+    
+    # 3 کالمز بنائیں تاکہ بٹن ایک لائن میں نظر آئیں
+    col_s1, col_s2, col_s3 = st.columns(3)
+    
+    with col_s1:
+        if st.button("📊 شماریاتی خلاصہ"):
+            st.write("#### شماریاتی خلاصہ (Describe):")
+            st.write(display_df.describe())
+            
+    with col_s2:
+        if st.button("🏗️ ڈیٹا سٹرکچر"):
+            st.write("#### ڈیٹا کا سٹرکچر (Info):")
+            buffer = io.StringIO()
+            display_df.info(buf=buffer)
+            st.text(buffer.getvalue())
+            
+    with col_s3:
+        if st.button("🧬 ڈیٹا ٹائپس"):
+            st.write("#### ڈیٹا ٹائپس:")
+            st.write(display_df.dtypes)
 
     # 2. ویژولائزیشن
     st.subheader("📊 ایڈوانسڈ ویژولیشن")
@@ -68,7 +110,7 @@ if uploaded_file:
         except Exception as e:
             st.error(f"ایرر: {e}")
 
-  # 3. AI چیٹ سیکشن
+    # 3. AI چیٹ سیکشن
     st.subheader("💬 AI ڈیٹا انالیسز")
     user_question = st.text_input("اپنے ڈیٹا کے بارے میں کوئی بھی سوال پوچھیں:")
     if st.button("Analyze with AI"):
@@ -83,6 +125,7 @@ if uploaded_file:
             st.write(response.choices[0].message.content)
         else:
             st.error("API Key نہیں مل رہی! براہ کرم Streamlit Settings میں Secrets چیک کریں۔")
+
 # 4. Footer
 st.markdown("---")
 st.markdown("""
